@@ -1,0 +1,151 @@
+---
+title: "Cardboard Sign Experiment"
+author: "Rishi"
+date: "2023-12-07"
+output: html_document
+---
+
+```{r setting, echo=FALSE,results= 'hide', message=FALSE }
+library("dplyr")
+library(greekLetters)
+library(psych)
+library(pwr)
+```
+
+# Sample Size Estimation 
+
+```{r}
+library(pwr)
+
+#Since calculating the sample size for a paired proportion test requires knowing the expected proportions in each group, we will follow a conservative approximation approach which will help us ensure sufficient power. 
+
+# Approximation - Expected change in proportion (effect size)
+effect_size <- 0.5  # Assuming medium effect (0.5)
+
+# Desired significance level and power
+alpha <- 0.05
+power <- 0.80
+
+# Calculate the sample size based on the effect size
+# Round up to the nearest integer because the sample size must be a whole number
+sample_size <- ceiling(pwr.2p.test(h = effect_size, n = NULL, sig.level = alpha, power=0.8, alternative = "two.sided")$n)
+sprintf("The sample size required to achieve power=0.8 at 5%% significance level with an assumed medium effect is %d", sample_size)
+print("Since, this is just a conservative approach, we will aim for sample size higher than 63 i.e 120 for each treatment level.")
+```
+
+# First Statistical Test
+
+# The experiment includes cardboard and gender level to understand people response
+
+```{r}
+paste(greeks("H_0"), ":There is no relationship between cardboard levels and gender.")
+paste(greeks("H_1"), ":There is a relationship between cardboard levels and gender.")
+
+# Creating the contingency table
+contingency_table <- matrix(c(15, 26, 28, 30, 20, 42), nrow = 2, byrow = TRUE)
+rownames(contingency_table) <- c("Male", "Female")
+colnames(contingency_table) <- c("High Five", "High Five with an image", "Air High Five")
+
+# Observed contingency table
+contingency_table
+# Perform chi-squared test
+chi_squared_test <- chisq.test(contingency_table)
+chi_squared_test
+
+print("At 5% significance level, we have a p-value of 0.06, hence we fail to reject the null hypothesis i.e there is no significant relationship between cardboard message and gender when people respond.")
+```
+Since we have found out that gender doesn't play any significant role in people response to cardboard message, we will run the following test to analyze if the cardboard messages themselves differ significantly. 
+
+# Statistical Test 2
+
+# Description of Treatment Levels 
+
+P1 = proportion of response with respect to the cardbord reading just "High Five"
+<br>
+P2 = proportion of response with respect to the cardbord reading "High Five with an image"
+<br>
+P3= proportion of response with respect to cardbord reading "Air High Five"
+<br>
+As analysed, gender doesn't play any significant role in people response with respect to these cardboard texts treatments.
+
+```{r}
+#Hypothesis
+paste(greeks("H_0"), ":The proportion of people response to all cardboard treatment levels is equal i.e p1=0.33, p2=0.33, and p3=0.33")
+paste(greeks("H_1"), ":Atleast one proportion differs from the expected proportion")
+
+# response values 
+response <- c(45,46,70)
+# Sample sizes
+sample_sizes <- c(120, 120, 120)
+
+# Observed probability 
+observed_props <- response/sample_sizes
+
+# Expected equal proportions based on hypothesis:h0
+expected_prop <- c(1/3, 1/3, 1/3)
+expected_counts <- expected_prop*sample_sizes
+
+# Calculate chi-squared statistic  
+chi_squared <- sum((response - expected_counts)^2 / expected_counts)
+sprintf("The chi-squared statistic value is %.3f",chi_squared)
+
+# Degree of freedom
+df <- 2 #Total 3 treatment levels 
+
+# Calculating p-value
+p_value <- 1 - pchisq(chi_squared, df)
+sprintf("The p-value for the test is %.3f",p_value)
+
+print("At 5% significance level, we can reject the null hypothesis i.e at least one of the proportion between the cardboard response is different.")
+```
+
+# Proportion Test between different pairs of cardboard text to find the most significant one
+
+```{r}
+# "High Five" vs "High Five with an image"
+prop1 <- 45/120
+prop2 <- 46/120
+sample_size1 <- 120
+sample_size2 <- 120
+
+# Perform proportion test
+prop_test <- prop.test(x = c(prop1 * sample_size1, prop2 * sample_size2),
+                       n = c(sample_size1, sample_size2),
+                       alternative = "two.sided")
+prop_test
+print("From this output, we can conlude that at 5% significance level, there is no major difference in response between cardboard that reads 'High Five' vs 'High Five with an image'")
+
+# "High Five" vs "Air High Five"
+prop1 <- 45/120
+prop3 <- 70/120
+sample_size1 <- 120
+sample_size3 <- 120
+
+# Perform proportion test
+prop_test <- prop.test(x = c(prop1 * sample_size1, prop3 * sample_size3),
+                       n = c(sample_size1, sample_size3),
+                       alternative = "two.sided")
+prop_test
+print("From the above output, we can conlude that at 5% significance level, there is a major difference in response between cardboard that reads 'High Five' vs 'Air High Five'")
+
+#"High Five with an image" vs "Air High Five" 
+prop2 <- 46/120
+prop3 <- 70/120
+sample_size2 <- 120
+sample_size3 <- 120
+
+# Perform proportion test
+prop_test <- prop.test(x = c(prop2 * sample_size2, prop3 * sample_size3),
+                       n = c(sample_size2, sample_size3),
+                       alternative = "two.sided")
+prop_test
+print("From the above output, we can conlude that at 5% significance level, there is a major difference in response between cardboard that reads 'High Five with an image' vs 'Air High Five'")
+```
+
+# Conclusion From First Test 
+
+The cardboard that reads "Air High Five" has the highest proportion of response with 0.58 compared to other cardboard types, especially "High Five" which has proportion of 0.375. 
+<br>
+Only cardboard with "Air High Five" is statistically different from other cardboard types in terms of people response. 
+
+
